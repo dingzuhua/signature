@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math';
+import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
@@ -106,11 +107,7 @@ class SignatureState extends State<Signature> {
               child: CustomPaint(
                 painter: _SignaturePainter(widget.controller),
                 child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                      minWidth: maxWidth,
-                      minHeight: maxHeight,
-                      maxWidth: maxWidth,
-                      maxHeight: maxHeight),
+                  constraints: BoxConstraints(minWidth: maxWidth, minHeight: maxHeight, maxWidth: maxWidth, maxHeight: maxHeight),
                 ),
               ),
             )),
@@ -158,8 +155,7 @@ class SignatureState extends State<Signature> {
     final double _maxSafeHeight = maxHeight == double.infinity ? screenSize!.height : maxHeight;
 
     //SAVE POINT ONLY IF IT IS IN THE SPECIFIED BOUNDARIES
-    if ((screenSize?.width == null || o.dx > 0 && o.dx < _maxSafeWidth) &&
-        (screenSize?.height == null || o.dy > 0 && o.dy < _maxSafeHeight)) {
+    if ((screenSize?.width == null || o.dx > 0 && o.dx < _maxSafeWidth) && (screenSize?.height == null || o.dy > 0 && o.dy < _maxSafeHeight)) {
       // IF USER LEFT THE BOUNDARY AND ALSO RETURNED BACK
       // IN ONE MOVE, RETYPE IT AS TAP, AS WE DO NOT WANT TO
       // LINK IT WITH PREVIOUS POINT
@@ -216,7 +212,8 @@ class _SignaturePainter extends CustomPainter {
       ..color = penColor != null ? penColor : _controller.penColor
       ..strokeWidth = _controller.penStrokeWidth
       ..strokeCap = _controller.strokeCap
-      ..strokeJoin = _controller.strokeJoin;
+      ..strokeJoin = _controller.strokeJoin
+      ..isAntiAlias = true;
   }
 
   final SignatureController _controller;
@@ -411,8 +408,7 @@ class SignatureController extends ValueNotifier<List<Point>> {
     }
 
     final ui.PictureRecorder recorder = ui.PictureRecorder();
-    final ui.Canvas canvas = Canvas(recorder)
-      ..translate(-(minXValue! - penStrokeWidth), -(minYValue! - penStrokeWidth));
+    final ui.Canvas canvas = Canvas(recorder)..translate(-(minXValue! - penStrokeWidth), -(minYValue! - penStrokeWidth));
     if (exportBackgroundColor != null) {
       final ui.Paint paint = Paint()..color = exportBackgroundColor!;
       canvas.drawPaint(paint);
@@ -448,9 +444,9 @@ class SignatureController extends ValueNotifier<List<Point>> {
   /// height and width should be at least as big as the drawings size
   /// Will return `null` if there are no points.
   Future<Uint8List?> toPngBytes({int? height, int? width}) async {
-    if (kIsWeb) {
-      return _toPngBytesForWeb(height: height, width: width);
-    }
+    // if (kIsWeb) {
+    //   return _toPngBytesForWeb(height: height, width: width);
+    // }
     final ui.Image? image = await toImage(height: height, width: width);
 
     if (image == null) {
@@ -466,76 +462,73 @@ class SignatureController extends ValueNotifier<List<Point>> {
   /// 'image.toByteData' is not available for web. So we are using the package
   /// 'image' to create an image which works on web too.
   /// Will return `null` if there are no points.
-  Uint8List? _toPngBytesForWeb({int? height, int? width}) {
-    if (isEmpty) {
-      return null;
-    }
+  // Uint8List? _toPngBytesForWeb({int? height, int? width}) {
+  //   if (isEmpty) {
+  //     return null;
+  //   }
 
-    if (width != null || height != null) {
-      assert(
-        ((width ?? defaultWidth!) - defaultWidth!) >= 0.0,
-        'Exported width cannot be smaller than actual width',
-      );
-      assert(
-        ((height ?? defaultHeight!) - defaultHeight!) >= 0.0,
-        'Exported height cannot be smaller than actual height',
-      );
-    }
+  //   if (width != null || height != null) {
+  //     assert(
+  //       ((width ?? defaultWidth!) - defaultWidth!) >= 0.0,
+  //       'Exported width cannot be smaller than actual width',
+  //     );
+  //     assert(
+  //       ((height ?? defaultHeight!) - defaultHeight!) >= 0.0,
+  //       'Exported height cannot be smaller than actual height',
+  //     );
+  //   }
+  //   final img.Color pColor = img.ColorRgb8(
+  //     exportPenColor?.red ?? penColor.red,
+  //     exportPenColor?.green ?? penColor.green,
+  //     exportPenColor?.blue ?? penColor.blue,
+  //   );
 
-    final img.Color pColor = img.ColorRgb8(
-      exportPenColor?.red ?? penColor.red,
-      exportPenColor?.green ?? penColor.green,
-      exportPenColor?.blue ?? penColor.blue,
-    );
+  //   final Color backgroundColor = exportBackgroundColor ?? Colors.transparent;
+  //   final int bColor = img.Color.fromRgba(
+  //     backgroundColor.red,
+  //     backgroundColor.green,
+  //     backgroundColor.blue,
+  //     backgroundColor.alpha.toInt(),
+  //   );
 
-    final Color backgroundColor = exportBackgroundColor ?? Colors.transparent;
-    final img.Color bColor = img.ColorRgba8(
-      backgroundColor.red,
-      backgroundColor.green,
-      backgroundColor.blue,
-      backgroundColor.alpha.toInt(),
-    );
+  //   final List<Point> translatedPoints = _translatePoints(points)!;
 
-    final List<Point> translatedPoints = _translatePoints(points)!;
+  //   final int canvasWidth = width ?? defaultWidth!;
+  //   final int canvasHeight = height ?? defaultHeight!;
 
-    final int canvasWidth = width ?? defaultWidth!;
-    final int canvasHeight = height ?? defaultHeight!;
+  //   // create the image with the given size
+  //   final img.Image signatureImage = img.Image(width: canvasWidth, height: canvasHeight);
+  //   // set the image background color
+  //   img.fill(signatureImage, color: bColor);
 
-    // create the image with the given size
-    final img.Image signatureImage = img.Image(width: canvasWidth, height: canvasHeight);
-    // set the image background color
-    img.fill(signatureImage, color: bColor);
+  //   final double xOffset = ((width ?? defaultWidth!) - defaultWidth!).toDouble() / 2;
+  //   final double yOffset = ((height ?? defaultHeight!) - defaultHeight!).toDouble() / 2;
 
-    final double xOffset = ((width ?? defaultWidth!) - defaultWidth!).toDouble() / 2;
-    final double yOffset =
-        ((height ?? defaultHeight!) - defaultHeight!).toDouble() / 2;
-
-    // read the drawing points list and draw the image
-    // it uses the same logic as the CustomPainter Paint function
-    for (int i = 0; i < translatedPoints.length - 1; i++) {
-      if (translatedPoints[i + 1].type == PointType.move) {
-        img.drawLine(
-            signatureImage,
-            x1: (translatedPoints[i].offset.dx + xOffset).toInt(),
-            y1: (translatedPoints[i].offset.dy + yOffset).toInt(),
-            x2: (translatedPoints[i + 1].offset.dx + xOffset).toInt(),
-            y2: (translatedPoints[i + 1].offset.dy + yOffset).toInt(),
-            color: pColor,
-            thickness: penStrokeWidth);
-      } else {
-        // draw the point to the image
-        img.fillCircle(
-          signatureImage,
-          x: (translatedPoints[i].offset.dx + xOffset).toInt(),
-          y: (translatedPoints[i].offset.dy + yOffset).toInt(),
-          radius: penStrokeWidth.toInt(),
-          color: pColor,
-        );
-      }
-    }
-    // encode the image to PNG
-    return Uint8List.fromList(img.encodePng(signatureImage));
-  }
+  //   // read the drawing points list and draw the image
+  //   // it uses the same logic as the CustomPainter Paint function
+  //   for (int i = 0; i < translatedPoints.length - 1; i++) {
+  //     if (translatedPoints[i + 1].type == PointType.move) {
+  //       img.drawLine(signatureImage,
+  //           x1: (translatedPoints[i].offset.dx + xOffset).toInt(),
+  //           y1: (translatedPoints[i].offset.dy + yOffset).toInt(),
+  //           x2: (translatedPoints[i + 1].offset.dx + xOffset).toInt(),
+  //           y2: (translatedPoints[i + 1].offset.dy + yOffset).toInt(),
+  //           color: pColor,
+  //           thickness: penStrokeWidth);
+  //     } else {
+  //       // draw the point to the image
+  //       img.fillCircle(
+  //         signatureImage,
+  //         x: (translatedPoints[i].offset.dx + xOffset).toInt(),
+  //         y: (translatedPoints[i].offset.dy + yOffset).toInt(),
+  //         radius: penStrokeWidth.toInt(),
+  //         color: pColor,
+  //       );
+  //     }
+  //   }
+  //   // encode the image to PNG
+  //   return Uint8List.fromList(img.encodePng(signatureImage));
+  // }
 
   /// Export the current content to a raw SVG string.
   /// Will return `null` if there are no points.
@@ -546,8 +539,7 @@ class SignatureController extends ValueNotifier<List<Point>> {
 
     String colorToHex(Color c) => '#${c.value.toRadixString(16).padLeft(8, '0')}';
 
-    String formatPoint(Point p) =>
-        '${p.offset.dx.toStringAsFixed(2)},${p.offset.dy.toStringAsFixed(2)}';
+    String formatPoint(Point p) => '${p.offset.dx.toStringAsFixed(2)},${p.offset.dy.toStringAsFixed(2)}';
 
     final String polylines = <String>[
       for (final List<Point> stroke in _latestActions)
@@ -569,6 +561,5 @@ class SignatureController extends ValueNotifier<List<Point>> {
 
   /// Export the current content to a SVG graphic.
   /// Will return `null` if there are no points.
-  svg.SvgPicture? toSVG({int? width, int? height}) =>
-      isEmpty ? null : svg.SvgPicture.string(toRawSVG(width: width, height: height)!);
+  svg.SvgPicture? toSVG({int? width, int? height}) => isEmpty ? null : svg.SvgPicture.string(toRawSVG(width: width, height: height)!);
 }

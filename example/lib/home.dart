@@ -7,7 +7,7 @@ import 'package:signature/signature.dart';
 import 'dart:typed_data';
 
 class Home extends StatefulWidget {
-  const Home({super.key});
+  const Home({Key? key}) : super(key: key);
 
   @override
   State<Home> createState() => _HomeState();
@@ -48,8 +48,7 @@ class _HomeState extends State<Home> {
       return;
     }
 
-    final Uint8List? data =
-        await _controller.toPngBytes(height: 1000, width: 1000);
+    final Uint8List? data = await _controller.toPngBytes(height: 1000, width: 1000);
     if (data == null) {
       return;
     }
