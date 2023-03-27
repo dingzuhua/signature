@@ -10,7 +10,7 @@ dependencies:
   flutter:
     sdk: flutter
 
-  flutter_svg: ^2.0.2
+  flutter_svg: 1.1.0
   image: ^4.0.15
 
 dev_dependencies:
